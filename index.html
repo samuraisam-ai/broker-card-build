@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOG Broker Card Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --yellow:#FFC93C; --yellow-soft:#FFF4D6; --dark:#2F3332; --ink:#151515; --muted:#5d5d5d;
+    --line:#e3dccb; --bg:#FAF7F0; --card:#ffffff; --ok:#1f7a3d; --ok-bg:#e6f4ea; --bad:#b3261e; --bad-bg:#fbe9e7;
+    --warn:#8a5a00; --warn-bg:#fff3d6; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Montserrat,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  header{background:var(--dark);color:#fff;padding:18px 16px}
+  header .wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{margin:0;font-size:20px;font-weight:700}
+  header h1 b{color:var(--yellow)}
+  header p{margin:2px 0 0;color:#cfcfcf;font-size:14px}
+  .wrap{max-width:900px;margin:0 auto}
+  body.wide .wrap{max-width:1400px}
+  main{padding:16px}
+  .tabs{display:flex;gap:8px;margin:0 0 16px}
+  .tab{border:2px solid var(--dark);background:#fff;color:var(--ink);padding:8px 14px;border-radius:999px;font:inherit;font-weight:600;cursor:pointer}
+  .tab[aria-selected="true"]{background:var(--dark);color:#fff}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:0 0 16px}
+  .step h2{margin:0 0 4px;font-size:18px;display:flex;align-items:center;gap:10px}
+  .num{display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--yellow);color:var(--ink);align-items:center;justify-content:center;font-size:14px;font-weight:700;flex:none}
+  .hint{margin:0 0 12px;color:var(--muted);font-size:14px}
+  textarea{width:100%;min-height:120px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;border:1px solid #cfc7b3;border-radius:8px;padding:10px;resize:vertical;background:#fffdf8}
+  input[type=text],input[type=url],select{width:100%;font:inherit;padding:9px 10px;border:1px solid #cfc7b3;border-radius:8px;background:#fff}
+  label{display:block;font-weight:600;font-size:14px;margin:10px 0 4px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:640px){.row{grid-template-columns:1fr}}
+  button{font:inherit;cursor:pointer}
+  .btn{border:0;border-radius:8px;padding:10px 16px;font-weight:700;background:var(--dark);color:#fff}
+  .btn.yellow{background:var(--yellow);color:var(--ink)}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid #cfc7b3}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .msg{border-radius:8px;padding:10px 12px;margin-top:12px;font-size:15px}
+  .msg.ok{background:var(--ok-bg);color:var(--ok)}
+  .msg.bad{background:var(--bad-bg);color:var(--bad)}
+  .msg.warn{background:var(--warn-bg);color:var(--warn)}
+  .msg ul{margin:6px 0 0;padding-left:20px}
+  .checklist{list-style:none;padding:0;margin:12px 0 0;font-size:15px}
+  .checklist li{margin:2px 0}
+  .hidden{display:none!important}
+  details{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}
+  summary{cursor:pointer;font-weight:700}
+  .sec{border:1px solid var(--line);border-radius:8px;margin:12px 0;overflow:hidden}
+  .sec-head{background:var(--yellow-soft);padding:10px 12px;display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+  .sec-head .t{flex:1;min-width:180px}
+  .sec-head .t b{display:block}
+  .sec-head .t small{color:var(--muted)}
+  .cardrow{display:flex;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .cardrow .t{flex:1;min-width:180px}
+  .cardrow .t small{display:block;color:var(--muted);font-size:12px;word-break:break-all}
+  .icon{border:1px solid #cfc7b3;background:#fff;border-radius:6px;padding:4px 8px;font-size:14px;line-height:1.2}
+  .icon:disabled{opacity:.3;cursor:not-allowed}
+  .mini{width:auto;font-size:13px;padding:4px 6px}
+  .editbox{padding:10px 12px;border-top:1px solid var(--line);background:#fffdf8}
+  .empty{padding:8px 12px;color:var(--muted);border-top:1px solid var(--line);font-size:14px}
+  .report{font-family:inherit;font-size:15px;line-height:1.6;background:#fffdf8;border:1px solid var(--line);border-radius:8px;padding:12px;white-space:pre-wrap;margin:12px 0 0}
+  .steps{margin:12px 0 0;padding-left:20px}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--dark);color:#fff;padding:10px 16px;border-radius:999px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:9}
+  .muted{color:var(--muted)}
+
+  /* ---------- view switch ---------- */
+  .seg{display:inline-flex;border:2px solid var(--dark);border-radius:999px;overflow:hidden;margin:8px 0 14px}
+  .seg button{border:0;background:#fff;color:var(--ink);padding:7px 14px;font-weight:600}
+  .seg button[aria-pressed="true"]{background:var(--dark);color:#fff}
+  .seg.small{margin:0}
+  .seg.small button{padding:5px 12px;font-size:14px}
+
+  /* ---------- visual editor (mirrors the Academy course-contents section) ---------- */
+  .vbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+  .vbar .switch{display:inline-flex;gap:6px;align-items:center;margin:0;font-weight:600;font-size:14px;cursor:pointer}
+  .vframe{container-type:inline-size;margin:0 auto;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+  .vframe.phone{max-width:375px}
+  .vpage{background:#FFC93C;padding:40px 20px 24px;font-family:Montserrat,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#151515}
+  .vchap{display:grid;grid-template-columns:clamp(56px,9cqw,120px) minmax(0,1fr);column-gap:clamp(16px,3cqw,40px)}
+  .vnum{font-weight:700;font-size:clamp(28px,4.6cqw,48px);line-height:1.15;border-right:3px solid rgba(21,21,21,.12)}
+  .vmain{min-width:0}
+  .vhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .vtitle{margin:0;font-size:clamp(26px,4.6cqw,48px);font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+  .vintro{margin-top:16px;font-size:clamp(16px,2.5cqw,26px);line-height:1.4}
+  .vgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-top:20px;padding-bottom:12px}
+  @container (max-width:699px){ .vgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @container (max-width:459px){
+    .vchap{grid-template-columns:minmax(0,1fr)}
+    .vnum{border-right:0;margin-bottom:6px}
+    .vgrid{grid-template-columns:minmax(0,1fr)}
+  }
+  .vcard{position:relative;cursor:pointer;border-radius:2px}
+  .vcard:hover,.vcard:focus-visible{box-shadow:0 0 0 3px #151515;outline:none}
+  .vthumb{aspect-ratio:16/9;background:#2F3332 url('https://lwfiles.mycourse.app/69022f36b413718f735b7f4a-public/ae50f79f1fdd93c8c13c911eef66fecc.png') center/cover no-repeat;display:flex;align-items:center;justify-content:center}
+  .vlogo{display:none;color:#fff;font-weight:800;font-size:clamp(12px,2cqw,18px);letter-spacing:.3px;padding-bottom:12%}
+  .vlogo b{color:#FFC93C}
+  .vpage.noimg .vthumb{background-image:none}
+  .vpage.noimg .vlogo{display:block}
+  .vcap{position:absolute;left:0;right:0;bottom:0;background:rgba(255,201,60,.4);color:#151515;padding:10px 14px 8px;font-size:clamp(13px,1.7cqw,17px);line-height:1.35;overflow-wrap:anywhere}
+  .vtools,.vstools{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+  .vtools{position:absolute;top:8px;right:8px}
+  .vcard:hover .vtools,.vcard:focus-within .vtools,.vchap:hover .vstools,.vhead:focus-within .vstools{opacity:1}
+  .vtools button,.vstools button{border:0;border-radius:6px;background:rgba(255,255,255,.96);color:#151515;padding:4px 8px;font-size:13px;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .vtools button:disabled,.vstools button:disabled{opacity:.35;cursor:not-allowed}
+  .vcard.dragging{opacity:.35}
+  .vcard.drop-before::before,.vcard.drop-after::after{content:"";position:absolute;top:0;bottom:0;width:5px;border-radius:3px;background:#151515}
+  .vcard.drop-before::before{left:-13px}
+  .vcard.drop-after::after{right:-13px}
+  .vadd{aspect-ratio:16/9;border:2px dashed rgba(21,21,21,.45);border-radius:4px;background:rgba(255,255,255,.22);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:inherit;font-weight:700;color:#151515}
+  .vadd:hover,.vadd:focus-visible,.vgrid.drop-end .vadd{background:rgba(255,255,255,.55);border-color:#151515;outline:none}
+  .vadd .plus{font-size:34px;line-height:1;font-weight:400}
+  .vaddsec{display:flex;align-items:center;gap:10px;margin:14px 0 30px;opacity:.4;transition:opacity .15s}
+  .vaddsec:hover,.vaddsec:focus-within{opacity:1}
+  .vaddsec::before,.vaddsec::after{content:"";flex:1;border-top:2px dashed rgba(21,21,21,.5)}
+  .vaddsec button{border:2px solid #151515;background:#FFC93C;color:#151515;border-radius:999px;padding:4px 12px;font-weight:700;font-size:13px}
+  .vempty{font-size:18px;text-align:center;margin:10px 0 20px}
+  .preview .vtools,.preview .vstools,.preview .vadd,.preview .vaddsec{display:none!important}
+  .preview .vcard{cursor:default;box-shadow:none!important}
+  .vpage.preview .vchap{margin-bottom:60px}
+  @media (hover:none){ .vtools,.vstools{opacity:1} .vaddsec{opacity:1} }
+
+  /* ---------- popup ---------- */
+  .modal{position:fixed;inset:0;background:rgba(21,21,21,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+  .modal-box{background:#fff;border-radius:12px;max-width:480px;width:100%;padding:20px;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  .modal-box h3{margin:0;font-size:19px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div><h1>SOG <b>Broker Card Builder</b></h1><p>Adds, edits and removes cards on the Broker page. Works offline. Nothing changes on the website until you paste and Save in LearnWorlds.</p></div>
+</div></header>
+
+<main class="wrap">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-update" aria-selected="true">Update the page</button>
+    <button class="tab" role="tab" id="tab-check" aria-selected="false">Check code</button>
+  </div>
+
+  <!-- ================= UPDATE TAB ================= -->
+  <section id="panel-update">
+    <div class="step">
+      <h2><span class="num">1</span>Paste the current code</h2>
+      <p class="hint">In LearnWorlds: click the Broker cards section → <b>Embeddable script</b> box → Ctrl+A / Cmd+A → copy → paste here.</p>
+      <textarea id="in-code" placeholder="Paste the code here…" spellcheck="false"></textarea>
+      <div class="btns"><button class="btn" id="btn-load">Load</button></div>
+      <div id="load-msg"></div>
+    </div>
+
+    <div class="step hidden" id="step-edit">
+      <h2><span class="num">2</span>Make your change</h2>
+      <div class="seg" role="group" aria-label="How to edit">
+        <button type="button" id="view-form-btn" aria-pressed="true">📝 Simple form</button>
+        <button type="button" id="view-visual-btn" aria-pressed="false">👁 Visual editor</button>
+      </div>
+
+      <div id="view-form">
+      <p class="hint">Most of the time you just add a lesson.</p>
+
+      <div class="row">
+        <div>
+          <label for="add-section">Section</label>
+          <select id="add-section"></select>
+        </div>
+        <div>
+          <label for="add-pos">Where in the section</label>
+          <select id="add-pos">
+            <option value="auto">Automatic</option>
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </div>
+      </div>
+      <label for="add-title">Title</label>
+      <input type="text" id="add-title" placeholder="e.g. Broker Meeting 13 Oct 2026" autocomplete="off">
+      <label for="add-link">Lesson link</label>
+      <input type="url" id="add-link" placeholder="https://space-online-academy.learnworlds.com/…" autocomplete="off">
+      <ul class="checklist" id="add-checklist"></ul>
+      <div class="btns">
+        <button class="btn yellow" id="btn-add" disabled>Add lesson</button>
+        <button class="btn ghost" id="btn-undo" disabled>Undo last change</button>
+      </div>
+
+      <details id="more">
+        <summary>More changes: edit, move, remove, sections</summary>
+        <div id="outline"></div>
+        <div class="sec">
+          <div class="sec-head"><div class="t"><b>+ Add a new section</b></div></div>
+          <div class="editbox">
+            <label for="ns-title">Section title</label>
+            <input type="text" id="ns-title" placeholder="e.g. Lease Masterclass">
+            <label for="ns-intro">Intro line (optional)</label>
+            <input type="text" id="ns-intro" placeholder="e.g. Advanced lease structuring.">
+            <label for="ns-pos">Position</label>
+            <select id="ns-pos"><option value="end">At the bottom of the page</option><option value="start">At the top of the page</option></select>
+            <div class="btns"><button class="btn" id="btn-add-section">Add section</button></div>
+          </div>
+        </div>
+      </details>
+      </div>
+
+      <div id="view-visual" class="hidden">
+        <div class="vbar">
+          <label class="switch"><input type="checkbox" id="v-preview"> Preview (hide editing buttons)</label>
+          <div class="seg small" role="group" aria-label="Screen size">
+            <button type="button" id="v-desktop" aria-pressed="true">🖥 Desktop</button>
+            <button type="button" id="v-phone" aria-pressed="false">📱 Phone</button>
+          </div>
+          <button class="btn ghost" id="v-undo" disabled>Undo last change</button>
+        </div>
+        <p class="hint">Hover a lesson to edit, move or remove it. Drag lessons to reorder them. Click <b>+ Add lesson</b> inside any section.</p>
+        <div class="vframe" id="v-frame"><div class="vpage" id="v-page"></div></div>
+        <p class="hint" style="margin-top:8px">Close match to the live page. Always check in LearnWorlds Preview after saving.</p>
+      </div>
+    </div>
+
+    <div class="step hidden" id="step-out">
+      <h2><span class="num">3</span>Copy the new code</h2>
+      <div id="out-body"></div>
+    </div>
+  </section>
+
+  <!-- ================= CHECK TAB ================= -->
+  <section id="panel-check" class="hidden">
+    <div class="step">
+      <h2><span class="num">✓</span>Check code before pasting</h2>
+      <p class="hint">Got code from the AI or somewhere else? Paste it here to make sure it's safe. Nothing is changed.</p>
+      <textarea id="chk-code" placeholder="Paste code to check…" spellcheck="false"></textarea>
+      <div class="btns"><button class="btn" id="btn-check">Check</button></div>
+      <div id="chk-msg"></div>
+    </div>
+  </section>
+</main>
+
+<div class="toast hidden" id="toast"></div>
+<div class="modal hidden" id="modal"><div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="m-title"><h3 id="m-title"></h3><div id="m-body"></div></div></div>
+
+<script>
+/* CORE START: reading and writing the card code. No page/DOM code in here. */
+var SOG = (function(){
+  var START = '<!-- SOG BROKER CARDS START: edit only with the SOG Broker Cards AI. Do not edit by hand. -->';
+  var BLOCK = '<div class="sog-block lw-course-contents -lw-course-contents8 lw-dark-bg contents-visible">';
+  var INNER = '<div class="sog-inner lw-course-contents-chapters">';
+  var END = '<!-- SOG BROKER CARDS END -->';
+  var IMG = 'https://lwfiles.mycourse.app/69022f36b413718f735b7f4a-public/ae50f79f1fdd93c8c13c911eef66fecc.png';
+
+  var CARD_A = '<a class="sog-card lw-course-contents-unit col no-padding mb-2rem span_3_of_12 span_4_of_12-tl span_6_of_12-tp span_6_of_12-sl span_12_of_12-sp" href="';
+  var CARD_B = '" target="_top"><div class="learnworlds-screen-wrapper learnworlds-element full"><div class="learnworlds-frame"><div class="lw-screen-content"><div class="learnworlds-screen-caption bottom with-flexible-parts lw-brand-bg-fadeout60"><div class="mr-10 learnworlds-main-text learnworlds-main-text-small learnworlds-element">';
+  var CARD_C = '</div></div><div class="learnworlds-AR-16-9 learnworlds-bg-default" style="background-image:url(\'' + IMG + '\')"></div></div></div></div></a>';
+
+  var S1 = '<div class="lw-course-contents-chapter mb-6rem">';
+  var S2 = '<div class="lw-cols one-row one-row-tl one-row-tp multiple-rows-sl multiple-rows-sp align-items-stretch">';
+  var S3A = '<div class="lw-course-contents-chapter-num col span_1_of_12 span_1_of_12-tl span_2_of_12-tp span_12_of_12-sl span_12_of_12-sp fsh-0 no-padding lw-br-3px-fadeout80 no-br-sl no-br-sp"><h3 class="lw-course-contents-chapter-num fsh-0 learnworlds-heading3 learnworlds-heading3-large learnworlds-element no-margin-bottom">';
+  var S3B = '</h3></div>';
+  var S4 = '<div class="pr-0 col span_11_of_12 span_11_of_12-tl span_10_of_12-tp span_12_of_12-sl span_12_of_12-sp no-padding-sl no-padding-sp fg-1">';
+  var S5A = '<h3 class="learnworlds-heading3 learnworlds-heading3-large learnworlds-element lw-course-contents-chapter-name no-margin-bottom">';
+  var S5B = '</h3>';
+  var S6A = '<div class="mt-2rem learnworlds-main-text-large">';
+  var S6B = '</div>';
+  var S7 = '<div class="lw-course-contents-units mt-2rem lw-cols multiple-rows multiple-rows-tl multiple-rows-tp multiple-rows-sl multiple-rows-sp">';
+
+  function rx(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  var W = '\\s*';
+  var CARD_RE = new RegExp('^' + rx(CARD_A) + '([^"<>]*)' + rx(CARD_B) + '([^<]*)' + rx(CARD_C));
+  var SECTION_RE = new RegExp('^<!-- ===== SECTION (\\d+) ===== -->' + W +
+    rx(S1) + W + rx(S2) + W + rx(S3A) + '(\\d+)' + rx(S3B) + W + rx(S4) + W +
+    rx(S5A) + '([^<]*)' + rx(S5B) + W +
+    '(?:' + rx(S6A) + '([^<]*)' + rx(S6B) + W + ')?' +
+    rx(S7) + '([\\s\\S]*?)</div>' + W + '</div>' + W + '</div>' + W + '</div>' + W + '$');
+  var BODY_RE = new RegExp('^' + rx(START) + W + rx(BLOCK) + W + rx(INNER) + '([\\s\\S]*?)</div>' + W + '</div>' + W + rx(END) + '$');
+  var SECTION_MARK = /<!-- ===== SECTION \d+ ===== -->/g;
+
+  function decode(s){
+    return s.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos|nbsp);/g, function(m, g){
+      if (g === 'amp') return '&'; if (g === 'lt') return '<'; if (g === 'gt') return '>';
+      if (g === 'quot') return '"'; if (g === 'apos') return "'"; if (g === 'nbsp') return ' ';
+      if (g[1] === 'x' || g[1] === 'X') return String.fromCharCode(parseInt(g.slice(2), 16));
+      return String.fromCharCode(parseInt(g.slice(1), 10));
+    });
+  }
+  function escText(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escAttr(s){ return escText(s).replace(/"/g,'&quot;'); }
+  function clean(s){ return decode(s).replace(/\s+/g,' ').trim(); }
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function lineOf(text, idx){ return text.slice(0, Math.max(0, idx)).split('\n').length; }
+
+  function cardLine(c){ return CARD_A + escAttr(c.link) + CARD_B + escText(c.title) + CARD_C; }
+
+  function serialize(model){
+    var out = START + '\n' + BLOCK + '\n' + INNER + '\n';
+    model.sections.forEach(function(s, i){
+      var nn = pad(i + 1);
+      out += '\n<!-- ===== SECTION ' + nn + ' ===== -->\n' + S1 + '\n' + S2 + '\n' + S3A + nn + S3B + '\n' + S4 + '\n' +
+             S5A + escText(s.title) + S5B + '\n' +
+             (s.intro ? S6A + escText(s.intro) + S6B + '\n' : '') +
+             S7 + '\n';
+      s.cards.forEach(function(c){ out += '\n<!-- CARD -->\n' + cardLine(c) + '\n'; });
+      out += '\n</div>\n</div>\n</div>\n</div>\n';
+    });
+    out += '\n</div>\n</div>\n' + END + '\n';
+    return out;
+  }
+
+  function fail(kind, message, line){ return { ok:false, kind:kind, message:message, line:line || null }; }
+
+  function parse(input){
+    var text = String(input || '').replace(/\r\n?/g, '\n').replace(/ /g, ' ').trim();
+    if (!text) return fail('empty', 'Nothing was pasted.');
+    var repairs = [];
+
+    var hasStart = /^<!--\s*SOG BROKER CARDS START[^\n]*-->/.test(text);
+    var hasEnd = /<!--\s*SOG BROKER CARDS END\s*-->$/.test(text);
+    if (!hasStart && !hasEnd) return fail('incomplete', "This doesn't look like the Broker cards code. The first and last lines are missing.");
+    if (!hasStart) return fail('incomplete', 'The first line is missing, so the code may not have been fully copied.');
+    if (!hasEnd) return fail('incomplete', 'The last line is missing, so the code looks cut off.');
+
+    // Repair the fixed lines (marker, wrapper and inner lines) if they were damaged.
+    var lines = text.split('\n');
+    lines = lines.map(function(l, i){
+      var t = l.trim();
+      if (i === 0 && t !== START) { repairs.push('first line'); return START; }
+      if (/^<div class="?sog-block/.test(t) && t !== BLOCK) { repairs.push('line ' + (i + 1)); return BLOCK; }
+      if (/^<div class="?sog-inner/.test(t) && t !== INNER) { repairs.push('line ' + (i + 1)); return INNER; }
+      if (i === lines.length - 1 && t !== END) { repairs.push('last line'); return END; }
+      return l;
+    });
+    text = lines.join('\n');
+
+    var m = BODY_RE.exec(text);
+    if (!m) {
+      var where = text.indexOf(BLOCK) < 0 ? 2 : (text.indexOf(INNER) < 0 ? 3 : lineOf(text, text.length) - 2);
+      return fail('damaged', 'The start or end of the code is damaged.', where);
+    }
+    var body = m[1];
+    var bodyOffset = m.index + m[0].indexOf(body);
+
+    var marks = [], mm;
+    SECTION_MARK.lastIndex = 0;
+    while ((mm = SECTION_MARK.exec(body))) marks.push(mm.index);
+    var before = marks.length ? body.slice(0, marks[0]) : body;
+    if (before.trim()) return fail('damaged', 'There is unexpected code before the first section.', lineOf(text, bodyOffset + body.indexOf(before.trim())));
+
+    var sections = [];
+    for (var i = 0; i < marks.length; i++) {
+      var chunkStart = marks[i];
+      var chunk = body.slice(chunkStart, i + 1 < marks.length ? marks[i + 1] : body.length);
+      var chunkLine = lineOf(text, bodyOffset + chunkStart);
+      var sm = SECTION_RE.exec(chunk);
+      if (!sm) {
+        var bad = findBadCard(chunk);
+        if (bad !== null) return fail('damaged', 'A card in section ' + (i + 1) + ' is damaged.', chunkLine + lineOf(chunk, bad) - 1);
+        return fail('damaged', 'Section ' + (i + 1) + ' is damaged (its heading or structure was changed).', chunkLine);
+      }
+      var cardsRegion = sm[5];
+      var regionStart = chunk.indexOf(cardsRegion, chunk.indexOf(S7) + S7.length);
+      var cards = [], pos = 0;
+      var stripped = cardsRegion;
+      while (true) {
+        var rest = stripped.slice(pos);
+        var lead = rest.match(/^(\s|<!-- CARD -->)*/)[0];
+        pos += lead.length;
+        if (pos >= stripped.length) break;
+        var cm = CARD_RE.exec(stripped.slice(pos));
+        if (!cm) return fail('damaged', 'A card in section ' + (i + 1) + ' is damaged.', chunkLine + lineOf(chunk, regionStart + pos) - 1);
+        cards.push({ link: decode(cm[1]).trim(), title: clean(cm[2]) });
+        pos += cm[0].length;
+      }
+      sections.push({ title: clean(sm[3]), intro: sm[4] === undefined ? '' : clean(sm[4]), cards: cards });
+    }
+
+    // Cross-check: every card and section in the raw text must have been read.
+    var rawCards = (text.match(/<a class="sog-card/g) || []).length;
+    var readCards = sections.reduce(function(n, s){ return n + s.cards.length; }, 0);
+    if (rawCards !== readCards) return fail('damaged', 'Some cards could not be read (' + rawCards + ' found, ' + readCards + ' read).');
+    if ((text.match(SECTION_MARK) || []).length !== sections.length) return fail('damaged', 'Some sections could not be read.');
+
+    return { ok:true, model:{ sections: sections }, repairs: repairs };
+  }
+
+  function findBadCard(chunk){
+    var re = /<a class="sog-card/g, m;
+    while ((m = re.exec(chunk))) { if (!CARD_RE.test(chunk.slice(m.index))) return m.index; }
+    return null;
+  }
+
+  function plain(model){
+    return JSON.stringify(model.sections.map(function(s){
+      return { title:s.title, intro:s.intro, cards:s.cards.map(function(c){ return { title:c.title, link:c.link }; }) };
+    }));
+  }
+
+  // Build code from the model, then read it back and confirm nothing changed.
+  function build(model){
+    var code = serialize(model);
+    var back = parse(code);
+    var ok = back.ok && back.repairs.length === 0 && plain(back.model) === plain(model) && serialize(back.model) === code;
+    return { code: code, ok: ok, reason: back.ok ? (ok ? '' : 'Read-back did not match.') : back.message };
+  }
+
+  return { parse:parse, serialize:serialize, build:build, plain:plain, START:START, END:END };
+})();
+if (typeof module !== 'undefined') module.exports = SOG;
+/* CORE END */
+</script>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var state = { original:null, model:null, history:[], log:[], nextId:1, editing:null };
+
+  function h(tag, attrs){
+    var el = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function(k){
+      if (k === 'text') el.textContent = attrs[k];
+      else if (k === 'class') el.className = attrs[k];
+      else if (k.slice(0,2) === 'on') el.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] === true) el.setAttribute(k, '');
+      else if (attrs[k] !== false && attrs[k] != null) el.setAttribute(k, attrs[k]);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c == null || c === false) continue;
+      (Array.isArray(c) ? c : [c]).forEach(function(x){ el.appendChild(typeof x === 'string' ? document.createTextNode(x) : x); });
+    }
+    return el;
+  }
+  function clone(m){ return JSON.parse(JSON.stringify(m)); }
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function today(){ var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function totalCards(m){ return m.sections.reduce(function(n, s){ return n + s.cards.length; }, 0); }
+  function secLabel(i, s){ return pad(i + 1) + ' ' + s.title; }
+  function isNewestFirst(s){ return /newest\s*first/i.test(s.intro || ''); }
+  function toast(t){ var el = $('toast'); el.textContent = t; el.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(function(){ el.classList.add('hidden'); }, 2600); }
+  function msg(kind, title, items){
+    return h('div', { class:'msg ' + kind }, h('b', { text:title }), items && items.length ? h('ul', null, items.map(function(t){ return h('li', { text:t }); })) : null);
+  }
+
+  // ---------- link + title rules ----------
+  function linkProblems(link, skipCardId){
+    var errs = [], warns = [];
+    if (!/^https?:\/\/\S+$/i.test(link)) errs.push('The link must be a web address starting with https://');
+    else {
+      if (!/^https:\/\/space-online-academy\.learnworlds\.com\//i.test(link)) warns.push("This isn't a LearnWorlds lesson link. Double-check it's the right one.");
+      state.model.sections.forEach(function(s){ s.cards.forEach(function(c){
+        if (c.id !== skipCardId && c.link === link) warns.push('This link is already on the page (card "' + c.title + '").');
+      }); });
+    }
+    return { errs:errs, warns:warns };
+  }
+
+  // ---------- load ----------
+  function tag(model){
+    model.sections.forEach(function(s){ s.id = state.nextId++; s.cards.forEach(function(c){ c.id = state.nextId++; }); });
+    return model;
+  }
+  function load(){
+    var raw = $('in-code').value;
+    var res = SOG.parse(raw);
+    var box = $('load-msg'); box.innerHTML = '';
+    if (!res.ok) {
+      state.original = state.model = null;
+      $('step-edit').classList.add('hidden'); $('step-out').classList.add('hidden');
+      var items = [res.message];
+      if (res.line) items.push('Look around line ' + res.line + '.');
+      items.push(res.kind === 'incomplete' || res.kind === 'empty'
+        ? 'Copy it again: click inside the Embeddable script box → Ctrl+A / Cmd+A → copy → paste here.'
+        : "Don't paste this into LearnWorlds. Use your latest backup file, or ask Craig for help.");
+      box.appendChild(msg('bad', '❌ This code can\'t be used', items));
+      return;
+    }
+    var model = tag(clone(res.model));
+    state.original = { raw: raw, model: clone(model) };
+    state.model = model; state.history = []; state.log = []; state.editing = null;
+    if (res.repairs.length) state.log.push('Repaired a damaged line in the code (' + res.repairs.join(', ') + ')');
+    var info = ['✅ Loaded: ' + model.sections.length + ' sections, ' + totalCards(model) + ' cards'];
+    box.appendChild(msg('ok', info[0], res.repairs.length ? ['A damaged line was found and repaired automatically.'] : null));
+    $('step-edit').classList.remove('hidden');
+    renderAll();
+  }
+
+  // ---------- changes ----------
+  function commit(desc, fn){
+    state.history.push({ model: clone(state.model), log: state.log.slice() });
+    fn(state.model);
+    state.log.push(desc);
+    state.editing = null;
+    renderAll();
+  }
+  function undo(){
+    var last = state.history.pop(); if (!last) return;
+    state.model = last.model; state.log = last.log; state.editing = null;
+    renderAll(); toast('Undone');
+  }
+  function insertCard(sec, card, pos){
+    var top = pos === 'top' || (pos === 'auto' && isNewestFirst(sec));
+    if (top) sec.cards.unshift(card); else sec.cards.push(card);
+    return top ? 'top' : 'bottom';
+  }
+
+  // ---------- add lesson form ----------
+  function addState(){
+    return validateLesson($('add-section').value, $('add-title').value.trim(), $('add-link').value.trim());
+  }
+  function validateLesson(si, title, link, skipCardId){
+    var list = [], ok = true;
+    list.push(si !== '' ? ['✅', 'Section'] : ['❌', 'Section: choose one']); if (si === '') ok = false;
+    list.push(title ? ['✅', 'Title'] : ['❌', 'Title: what should the card say?']); if (!title) ok = false;
+    var warns = [];
+    if (!link) { list.push(['❌', 'Link: paste the lesson link']); ok = false; }
+    else {
+      var p = linkProblems(link, skipCardId);
+      if (p.errs.length) { list.push(['❌', 'Link: ' + p.errs[0]]); ok = false; }
+      else { list.push(['✅', 'Link']); warns = p.warns; }
+    }
+    return { ok:ok, list:list, warns:warns, si:si, title:title, link:link };
+  }
+  function renderAddForm(){
+    var st = addState(), ul = $('add-checklist'); ul.innerHTML = '';
+    st.list.forEach(function(x){ ul.appendChild(h('li', { text: x[0] + '  ' + x[1] })); });
+    st.warns.forEach(function(w){ ul.appendChild(h('li', { text: '⚠️  ' + w })); });
+    $('btn-add').disabled = !st.ok;
+  }
+  function renderSectionSelect(){
+    var sel = $('add-section'), prev = sel.value;
+    sel.innerHTML = '';
+    sel.appendChild(h('option', { value:'', text:'Choose a section…' }));
+    state.model.sections.forEach(function(s, i){ sel.appendChild(h('option', { value:String(s.id), text:secLabel(i, s) + (isNewestFirst(s) ? '  (newest first)' : '') })); });
+    if (state.model.sections.some(function(s){ return String(s.id) === prev; })) sel.value = prev;
+  }
+  function addLesson(){
+    var st = addState(); if (!st.ok) return;
+    var sec = state.model.sections.filter(function(s){ return String(s.id) === st.si; })[0];
+    var pos = $('add-pos').value, where;
+    commit('', function(){ where = insertCard(sec, { id: state.nextId++, title: st.title, link: st.link }, pos); });
+    state.log[state.log.length - 1] = 'Added "' + st.title + '" to ' + secLabel(state.model.sections.indexOf(sec), sec) + ' (' + where + ')';
+    $('add-title').value = ''; $('add-link').value = '';
+    renderAll();
+    toast('Lesson added ✓ Now copy the new code in step 3');
+    $('step-out').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  // ---------- outline (more changes) ----------
+  function renderOutline(){
+    var root = $('outline'); root.innerHTML = '';
+    var secs = state.model.sections;
+    secs.forEach(function(s, i){
+      var editingSec = state.editing && state.editing.type === 'sec' && state.editing.id === s.id;
+      var head = h('div', { class:'sec-head' },
+        h('div', { class:'t' }, h('b', { text: secLabel(i, s) + '  (' + s.cards.length + ' cards)' }), h('small', { text: s.intro || 'No intro line' })),
+        h('button', { class:'icon', title:'Edit section', onclick:function(){ state.editing = { type:'sec', id:s.id }; renderOutline(); } }, '✏️ Edit'),
+        h('button', { class:'icon', title:'Move section up', disabled: i === 0, onclick:function(){ commit('Moved section "' + s.title + '" up', function(m){ m.sections.splice(i - 1, 0, m.sections.splice(i, 1)[0]); }); } }, '↑'),
+        h('button', { class:'icon', title:'Move section down', disabled: i === secs.length - 1, onclick:function(){ commit('Moved section "' + s.title + '" down', function(m){ m.sections.splice(i + 1, 0, m.sections.splice(i, 1)[0]); }); } }, '↓'),
+        h('button', { class:'icon', title:'Remove section', onclick:function(){
+          if (!confirm('Remove the section "' + s.title + '"' + (s.cards.length ? ' and its ' + s.cards.length + ' card(s)' : '') + '?\n\nYou can still Undo before copying.')) return;
+          commit('Removed section "' + s.title + '"' + (s.cards.length ? ' with ' + s.cards.length + ' card(s)' : ''), function(m){ m.sections.splice(i, 1); });
+        } }, '🗑'));
+      var box = h('div', { class:'sec' }, head);
+      if (editingSec) box.appendChild(sectionEditor(s));
+      if (!s.cards.length) box.appendChild(h('div', { class:'empty', text:'No cards in this section yet.' }));
+      s.cards.forEach(function(c, j){
+        var editingCard = state.editing && state.editing.type === 'card' && state.editing.id === c.id;
+        var moveSel = h('select', { class:'mini', title:'Move to another section', onchange:function(e){
+          var target = secs.filter(function(x){ return String(x.id) === e.target.value; })[0]; if (!target) return;
+          commit('', function(){ s.cards.splice(j, 1); insertCard(target, c, 'auto'); });
+          state.log[state.log.length - 1] = 'Moved "' + c.title + '" to ' + secLabel(state.model.sections.indexOf(target), target);
+          renderAll();
+        } }, h('option', { value:'', text:'Move to…' }), secs.filter(function(x){ return x !== s; }).map(function(x){ return h('option', { value:String(x.id), text:secLabel(secs.indexOf(x), x) }); }));
+        box.appendChild(h('div', { class:'cardrow' },
+          h('div', { class:'t' }, c.title, h('small', { text:c.link })),
+          h('button', { class:'icon', title:'Edit card', onclick:function(){ state.editing = { type:'card', id:c.id }; renderOutline(); } }, '✏️'),
+          h('button', { class:'icon', title:'Move up', disabled: j === 0, onclick:function(){ commit('Moved "' + c.title + '" up', function(){ s.cards.splice(j - 1, 0, s.cards.splice(j, 1)[0]); }); } }, '↑'),
+          h('button', { class:'icon', title:'Move down', disabled: j === s.cards.length - 1, onclick:function(){ commit('Moved "' + c.title + '" down', function(){ s.cards.splice(j + 1, 0, s.cards.splice(j, 1)[0]); }); } }, '↓'),
+          secs.length > 1 ? moveSel : null,
+          h('button', { class:'icon', title:'Remove card', onclick:function(){
+            if (!confirm('Remove "' + c.title + '" from ' + s.title + '?\n\nYou can still Undo before copying.')) return;
+            commit('Removed "' + c.title + '" from ' + secLabel(i, s), function(){ s.cards.splice(j, 1); });
+          } }, '🗑')));
+        if (editingCard) box.appendChild(cardEditor(s, c));
+      });
+      root.appendChild(box);
+    });
+  }
+  function sectionEditor(s){
+    var t = h('input', { type:'text', value:s.title }), intro = h('input', { type:'text', value:s.intro }), err = h('div');
+    return h('div', { class:'editbox' },
+      h('label', { text:'Section title' }), t, h('label', { text:'Intro line (optional)' }), intro, err,
+      h('div', { class:'btns' },
+        h('button', { class:'btn', onclick:function(){
+          var nt = t.value.trim(), ni = intro.value.trim(); err.innerHTML = '';
+          if (!nt) { err.appendChild(msg('bad', '❌ The section needs a title.')); return; }
+          if (nt === s.title && ni === s.intro) { state.editing = null; renderOutline(); return; }
+          var old = s.title;
+          commit('Edited section "' + old + '"' + (nt !== old ? ' → "' + nt + '"' : '') + (ni !== s.intro ? ' (intro changed)' : ''), function(){ s.title = nt; s.intro = ni; });
+        } }, 'Save'),
+        h('button', { class:'btn ghost', onclick:function(){ state.editing = null; renderOutline(); } }, 'Cancel')));
+  }
+  function cardEditor(s, c){
+    var t = h('input', { type:'text', value:c.title }), l = h('input', { type:'url', value:c.link }), err = h('div');
+    return h('div', { class:'editbox' },
+      h('label', { text:'Title' }), t, h('label', { text:'Lesson link' }), l, err,
+      h('div', { class:'btns' },
+        h('button', { class:'btn', onclick:function(){
+          var nt = t.value.trim(), nl = l.value.trim(); err.innerHTML = '';
+          if (!nt) { err.appendChild(msg('bad', '❌ The card needs a title.')); return; }
+          var p = linkProblems(nl, c.id);
+          if (p.errs.length) { err.appendChild(msg('bad', '❌ ' + p.errs[0])); return; }
+          if (nt === c.title && nl === c.link) { state.editing = null; renderOutline(); return; }
+          var old = c.title;
+          commit('Edited "' + old + '"' + (nt !== old ? ' → "' + nt + '"' : '') + (nl !== c.link ? ' (new link)' : ''), function(){ c.title = nt; c.link = nl; });
+          if (p.warns.length) toast('⚠️ ' + p.warns[0]);
+        } }, 'Save'),
+        h('button', { class:'btn ghost', onclick:function(){ state.editing = null; renderOutline(); } }, 'Cancel')));
+  }
+  function addSection(){
+    var t = $('ns-title').value.trim(), intro = $('ns-intro').value.trim(), pos = $('ns-pos').value;
+    if (!t) { toast('❌ The new section needs a title'); $('ns-title').focus(); return; }
+    commit('Added new section "' + t + '" (' + (pos === 'start' ? 'top' : 'bottom') + ' of page)', function(m){
+      var s = { id: state.nextId++, title:t, intro:intro, cards:[] };
+      if (pos === 'start') m.sections.unshift(s); else m.sections.push(s);
+    });
+    $('ns-title').value = ''; $('ns-intro').value = '';
+    toast('Section added ✓');
+  }
+
+  // ---------- visual editor ----------
+  var drag = null;
+  function findSec(id){ return state.model.sections.filter(function(s){ return String(s.id) === String(id); })[0]; }
+  function setView(v){
+    state.view = v;
+    $('view-form-btn').setAttribute('aria-pressed', v === 'form'); $('view-visual-btn').setAttribute('aria-pressed', v === 'visual');
+    $('view-form').classList.toggle('hidden', v !== 'form'); $('view-visual').classList.toggle('hidden', v !== 'visual');
+    document.body.classList.toggle('wide', v === 'visual');
+    try { localStorage.setItem('sogBuilderView', v); } catch(e){}
+    if (state.model) renderAll();
+  }
+  function tool(label, title, fn, disabled){
+    return h('button', { type:'button', title:title, 'aria-label':title, disabled:!!disabled, onclick:function(e){ e.stopPropagation(); fn(); } }, label);
+  }
+  function clearDropMarks(){
+    document.querySelectorAll('.drop-before,.drop-after,.drop-end').forEach(function(el){ el.classList.remove('drop-before', 'drop-after', 'drop-end'); });
+  }
+  function moveCard(from, toSec, targetId, after){
+    var src = findSec(from.sid); if (!src || !toSec) return;
+    var card = src.cards.filter(function(x){ return x.id === from.cid; })[0]; if (!card || card.id === targetId) return;
+    var oldIdx = src.cards.indexOf(card);
+    var rest = toSec.cards.filter(function(x){ return x !== card; });
+    var idx = targetId == null ? rest.length : rest.map(function(x){ return x.id; }).indexOf(targetId) + (after ? 1 : 0);
+    if (src === toSec && idx === oldIdx) return;
+    commit('', function(){ src.cards.splice(oldIdx, 1); toSec.cards.splice(idx, 0, card); });
+    state.log[state.log.length - 1] = 'Moved "' + card.title + '" ' + (src === toSec ? 'within ' : 'to ') + secLabel(state.model.sections.indexOf(toSec), toSec);
+    renderAll();
+  }
+  function removeCard(s, c){
+    if (!confirm('Remove "' + c.title + '" from ' + s.title + '?\n\nYou can still Undo before copying.')) return;
+    var i = state.model.sections.indexOf(s);
+    commit('Removed "' + c.title + '" from ' + secLabel(i, s), function(){ s.cards.splice(s.cards.indexOf(c), 1); });
+  }
+  function removeSection(s){
+    var i = state.model.sections.indexOf(s);
+    if (!confirm('Remove the section "' + s.title + '"' + (s.cards.length ? ' and its ' + s.cards.length + ' card(s)' : '') + '?\n\nYou can still Undo before copying.')) return;
+    commit('Removed section "' + s.title + '"' + (s.cards.length ? ' with ' + s.cards.length + ' card(s)' : ''), function(m){ m.sections.splice(i, 1); });
+  }
+  function moveSection(s, dir){
+    var i = state.model.sections.indexOf(s), j = i + dir;
+    if (j < 0 || j >= state.model.sections.length) return;
+    commit('Moved section "' + s.title + '" ' + (dir < 0 ? 'up' : 'down'), function(m){ m.sections.splice(j, 0, m.sections.splice(i, 1)[0]); });
+  }
+  function stepCard(s, c, dir){
+    var j = s.cards.indexOf(c), k = j + dir;
+    if (k < 0 || k >= s.cards.length) return;
+    commit('Moved "' + c.title + '" ' + (dir < 0 ? 'earlier' : 'later') + ' in ' + secLabel(state.model.sections.indexOf(s), s), function(){ s.cards.splice(k, 0, s.cards.splice(j, 1)[0]); });
+  }
+
+  function vCard(s, c, j){
+    var preview = state.vPreview;
+    var el = h('div', { class:'vcard', tabindex: preview ? null : '0', draggable: preview ? 'false' : 'true', title: preview ? c.link : 'Click to edit · drag to move' },
+      h('div', { class:'vthumb' }, h('span', { class:'vlogo' }, 'SPACE', h('b', { text:'ONLINE' }), 'GROUP')),
+      h('div', { class:'vcap', text:c.title }),
+      h('div', { class:'vtools' },
+        tool('✏️', 'Edit lesson', function(){ openLessonModal(s.id, c.id); }),
+        tool('←', 'Move earlier', function(){ stepCard(s, c, -1); }, j === 0),
+        tool('→', 'Move later', function(){ stepCard(s, c, 1); }, j === s.cards.length - 1),
+        tool('🗑', 'Remove lesson', function(){ removeCard(s, c); })));
+    if (preview) return el;
+    el.addEventListener('click', function(){ openLessonModal(s.id, c.id); });
+    el.addEventListener('keydown', function(e){ if (e.target === el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openLessonModal(s.id, c.id); } });
+    el.addEventListener('dragstart', function(e){ drag = { sid:s.id, cid:c.id }; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', c.title); } catch(err){} el.classList.add('dragging'); });
+    el.addEventListener('dragend', function(){ drag = null; el.classList.remove('dragging'); clearDropMarks(); });
+    el.addEventListener('dragover', function(e){
+      if (!drag) return; e.preventDefault(); e.stopPropagation(); clearDropMarks();
+      var r = el.getBoundingClientRect(); el.classList.add(e.clientX > r.left + r.width / 2 ? 'drop-after' : 'drop-before');
+    });
+    el.addEventListener('drop', function(e){
+      if (!drag) return; e.preventDefault(); e.stopPropagation();
+      var r = el.getBoundingClientRect(), after = e.clientX > r.left + r.width / 2, from = drag;
+      clearDropMarks(); drag = null; moveCard(from, s, c.id, after);
+    });
+    return el;
+  }
+  function addSectionBar(index){
+    return h('div', { class:'vaddsec' }, h('button', { type:'button', onclick:function(){ openSectionModal(index, null); } }, '+ Add section here'));
+  }
+  function renderVisual(){
+    var page = $('v-page'); if (!page) return;
+    page.innerHTML = '';
+    page.classList.toggle('preview', !!state.vPreview);
+    $('v-frame').classList.toggle('phone', !!state.vPhone);
+    $('v-desktop').setAttribute('aria-pressed', !state.vPhone); $('v-phone').setAttribute('aria-pressed', !!state.vPhone);
+    $('v-preview').checked = !!state.vPreview;
+    $('v-undo').disabled = !state.history.length;
+    var secs = state.model.sections;
+    if (!secs.length) page.appendChild(h('p', { class:'vempty', text:'No sections yet.' }));
+    page.appendChild(addSectionBar(0));
+    secs.forEach(function(s, i){
+      var grid = h('div', { class:'vgrid' });
+      s.cards.forEach(function(c, j){ grid.appendChild(vCard(s, c, j)); });
+      grid.appendChild(h('button', { type:'button', class:'vadd', onclick:function(){ openLessonModal(s.id, null); } }, h('span', { class:'plus', text:'+' }), h('span', { text:'Add lesson' })));
+      grid.addEventListener('dragover', function(e){ if (!drag) return; e.preventDefault(); clearDropMarks(); grid.classList.add('drop-end'); });
+      grid.addEventListener('dragleave', function(e){ if (!grid.contains(e.relatedTarget)) grid.classList.remove('drop-end'); });
+      grid.addEventListener('drop', function(e){ if (!drag) return; e.preventDefault(); var from = drag; clearDropMarks(); drag = null; moveCard(from, s, null, false); });
+      page.appendChild(h('div', { class:'vchap' },
+        h('div', { class:'vnum', text:pad(i + 1) }),
+        h('div', { class:'vmain' },
+          h('div', { class:'vhead' },
+            h('h3', { class:'vtitle', text:s.title }),
+            h('div', { class:'vstools' },
+              tool('✏️ Edit', 'Edit section title / intro', function(){ openSectionModal(null, s.id); }),
+              tool('↑', 'Move section up', function(){ moveSection(s, -1); }, i === 0),
+              tool('↓', 'Move section down', function(){ moveSection(s, 1); }, i === secs.length - 1),
+              tool('🗑', 'Remove section', function(){ removeSection(s); }))),
+          s.intro ? h('div', { class:'vintro', text:s.intro }) : null,
+          grid)));
+      page.appendChild(addSectionBar(i + 1));
+    });
+  }
+
+  // ---------- popups ----------
+  function openModal(title, body){
+    $('m-title').textContent = title; var b = $('m-body'); b.innerHTML = ''; b.appendChild(body);
+    $('modal').classList.remove('hidden');
+    var first = b.querySelector('input:placeholder-shown') || b.querySelector('input,select'); if (first) setTimeout(function(){ first.focus(); }, 30);
+  }
+  function closeModal(){ $('modal').classList.add('hidden'); $('m-body').innerHTML = ''; }
+  function openLessonModal(sid, cid){
+    var sec = findSec(sid), editing = cid != null;
+    var card = editing ? sec.cards.filter(function(x){ return x.id === cid; })[0] : null;
+    var sel = h('select', null, state.model.sections.map(function(s, i){ return h('option', { value:String(s.id), text:secLabel(i, s) + (isNewestFirst(s) ? '  (newest first)' : '') }); }));
+    sel.value = String(sid);
+    var t = h('input', { type:'text', value: card ? card.title : '', placeholder:'e.g. Broker Meeting 13 Oct 2026', autocomplete:'off' });
+    var l = h('input', { type:'url', value: card ? card.link : '', placeholder:'https://space-online-academy.learnworlds.com/…', autocomplete:'off' });
+    var pos = editing ? null : h('select', null, h('option', { value:'auto', text:'Automatic' }), h('option', { value:'top', text:'Top' }), h('option', { value:'bottom', text:'Bottom' }));
+    var ul = h('ul', { class:'checklist' });
+    var go = h('button', { type:'button', class:'btn yellow' }, editing ? 'Save changes' : 'Add lesson');
+    function upd(){
+      var v = validateLesson(sel.value, t.value.trim(), l.value.trim(), card && card.id);
+      ul.innerHTML = '';
+      v.list.forEach(function(x){ ul.appendChild(h('li', { text: x[0] + '  ' + x[1] })); });
+      v.warns.forEach(function(w){ ul.appendChild(h('li', { text: '⚠️  ' + w })); });
+      var unchanged = editing && v.title === card.title && v.link === card.link && sel.value === String(sid);
+      go.disabled = !v.ok || unchanged;
+      return v;
+    }
+    [sel, t, l].forEach(function(x){ x.addEventListener('input', upd); x.addEventListener('change', upd); });
+    [t, l].forEach(function(x){ x.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !go.disabled) go.click(); }); });
+    go.addEventListener('click', function(){
+      var v = upd(); if (!v.ok) return;
+      var target = findSec(v.si);
+      if (!editing) {
+        var where;
+        commit('', function(){ where = insertCard(target, { id: state.nextId++, title:v.title, link:v.link }, pos.value); });
+        state.log[state.log.length - 1] = 'Added "' + v.title + '" to ' + secLabel(state.model.sections.indexOf(target), target) + ' (' + where + ')';
+        closeModal(); renderAll(); toast('Lesson added ✓ Copy the new code in step 3');
+        return;
+      }
+      var parts = [];
+      if (v.title !== card.title) parts.push('→ "' + v.title + '"');
+      if (v.link !== card.link) parts.push('(new link)');
+      if (target !== sec) parts.push('moved to ' + secLabel(state.model.sections.indexOf(target), target));
+      var old = card.title;
+      var desc = (v.title === card.title && v.link === card.link) ? 'Moved "' + old + '" to ' + secLabel(state.model.sections.indexOf(target), target) : 'Edited "' + old + '" ' + parts.join(' ');
+      commit(desc, function(){
+        card.title = v.title; card.link = v.link;
+        if (target !== sec) { sec.cards.splice(sec.cards.indexOf(card), 1); insertCard(target, card, 'auto'); }
+      });
+      closeModal(); toast('Saved ✓');
+    });
+    var body = h('div', null,
+      h('label', { text:'Section' }), sel,
+      h('label', { text:'Title' }), t,
+      h('label', { text:'Lesson link' }), l,
+      pos ? h('label', { text:'Where in the section' }) : null, pos,
+      ul,
+      h('div', { class:'btns' }, go,
+        h('button', { type:'button', class:'btn ghost', onclick:closeModal }, 'Cancel'),
+        editing ? h('button', { type:'button', class:'btn ghost', style:'margin-left:auto', onclick:function(){ closeModal(); removeCard(sec, card); } }, '🗑 Remove') : null));
+    openModal(editing ? 'Edit lesson' : 'Add a lesson', body);
+    upd();
+  }
+  function openSectionModal(index, sid){
+    var s = sid != null ? findSec(sid) : null;
+    var t = h('input', { type:'text', value: s ? s.title : '', placeholder:'e.g. Lease Masterclass', autocomplete:'off' });
+    var intro = h('input', { type:'text', value: s ? s.intro : '', placeholder:'e.g. Advanced lease structuring. (optional)', autocomplete:'off' });
+    var ul = h('ul', { class:'checklist' });
+    var go = h('button', { type:'button', class:'btn yellow' }, s ? 'Save changes' : 'Add section');
+    function upd(){
+      var nt = t.value.trim(); ul.innerHTML = '';
+      ul.appendChild(h('li', { text: nt ? '✅  Title' : '❌  Title: what is the section called?' }));
+      go.disabled = !nt || (s && nt === s.title && intro.value.trim() === s.intro);
+    }
+    [t, intro].forEach(function(x){ x.addEventListener('input', upd); x.addEventListener('keydown', function(e){ if (e.key === 'Enter' && !go.disabled) go.click(); }); });
+    go.addEventListener('click', function(){
+      var nt = t.value.trim(), ni = intro.value.trim(); if (!nt) return;
+      if (s) {
+        var old = s.title;
+        commit('Edited section "' + old + '"' + (nt !== old ? ' → "' + nt + '"' : '') + (ni !== s.intro ? ' (intro changed)' : ''), function(){ s.title = nt; s.intro = ni; });
+      } else {
+        commit('Added new section "' + nt + '" (position ' + pad(index + 1) + ')', function(m){ m.sections.splice(index, 0, { id: state.nextId++, title:nt, intro:ni, cards:[] }); });
+      }
+      closeModal(); toast(s ? 'Saved ✓' : 'Section added ✓ Now click + Add lesson inside it');
+    });
+    openModal(s ? 'Edit section' : 'Add a section', h('div', null,
+      h('label', { text:'Section title' }), t,
+      h('label', { text:'Intro line (optional)' }), intro,
+      h('p', { class:'hint', style:'margin:6px 0 0', text:'Tip: include "Newest first." in the intro and new lessons go to the top of this section.' }),
+      ul,
+      h('div', { class:'btns' }, go, h('button', { type:'button', class:'btn ghost', onclick:closeModal }, 'Cancel'))));
+    upd();
+  }
+
+  // ---------- output ----------
+  function download(name, text){
+    var a = h('a', { href: URL.createObjectURL(new Blob([text], { type:'text/html' })), download:name });
+    document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function copyText(text, ta){
+    function fallback(){ ta.focus(); ta.select(); try { document.execCommand('copy'); toast('Copied ✓'); } catch(e){ toast('Select the code below and copy it manually'); } }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){ toast('Copied ✓'); }, fallback);
+    else fallback();
+  }
+  function renderOutput(){
+    var out = $('out-body'), step = $('step-out'); out.innerHTML = '';
+    if (!state.log.length) { step.classList.add('hidden'); return; }
+    step.classList.remove('hidden');
+
+    var built = SOG.build(state.model);
+    if (!built.ok) {
+      out.appendChild(msg('bad', '❌ Something went wrong building the code, so it has been blocked.', [built.reason, 'Click "Undo last change" and try again, or ask Craig.']));
+      return;
+    }
+    var orig = state.original.model, cur = state.model;
+    var origById = {}; orig.sections.forEach(function(s){ origById[s.id] = s; });
+    var curCardIds = {}; cur.sections.forEach(function(s){ s.cards.forEach(function(c){ curCardIds[c.id] = 1; }); });
+    var removed = []; orig.sections.forEach(function(s){ s.cards.forEach(function(c){ if (!curCardIds[c.id]) removed.push('"' + c.title + '"'); }); });
+    var curSecIds = {}; cur.sections.forEach(function(s){ curSecIds[s.id] = 1; });
+
+    var r = 'WHAT CHANGED\n' + state.log.map(function(l){ return '- ' + l; }).join('\n') + '\n\nCHECK: BEFORE → AFTER\n';
+    cur.sections.forEach(function(s, i){ var o = origById[s.id]; r += secLabel(i, s) + ': ' + (o ? o.cards.length : 'new') + ' → ' + s.cards.length + (s.cards.length === 1 ? ' card\n' : ' cards\n'); });
+    orig.sections.forEach(function(s){ if (!curSecIds[s.id]) r += s.title + ': ' + s.cards.length + ' → section removed\n'; });
+    r += 'Total: ' + totalCards(orig) + ' → ' + totalCards(cur) + ' cards\nRemoved: ' + (removed.length ? removed.join(', ') : 'nothing');
+    out.appendChild(h('div', { class:'report', text:r }));
+
+    out.appendChild(h('ul', { class:'checklist' },
+      h('li', { text:'✅  Start and end lines present' }),
+      h('li', { text:'✅  Every card and section built from the exact template' }),
+      h('li', { text:'✅  Code read back and matches: nothing lost' }),
+      removed.length ? h('li', { text:'⚠️  ' + removed.length + ' card(s) removed, as you asked' }) : null));
+
+    var ta = h('textarea', { readonly:true, spellcheck:'false', style:'min-height:90px' }); ta.value = built.code;
+    out.appendChild(h('div', { class:'btns' },
+      h('button', { class:'btn yellow', onclick:function(){ copyText(built.code, ta); } }, '📋 Copy new code'),
+      h('button', { class:'btn ghost', onclick:function(){ download('sog-broker-cards-NEW-' + today() + '.html', built.code); } }, '⬇️ Download new'),
+      h('button', { class:'btn ghost', onclick:function(){ download('sog-broker-cards-BACKUP-' + today() + '.html', state.original.raw); } }, '⬇️ Download backup')));
+    out.appendChild(h('ol', { class:'steps' },
+      h('li', null, 'Click ', h('b', { text:'Download backup' }), ' and keep it in the shared backups folder.'),
+      h('li', null, 'In LearnWorlds: Embeddable script box → Ctrl+A / Cmd+A → Delete → paste → ', h('b', { text:'Update' }), ' → ', h('b', { text:'Save' }), '.'),
+      h('li', null, h('b', { text:'Preview' }), ' and click your new card to check it opens the right lesson.')));
+    out.appendChild(h('details', null, h('summary', { text:'Show the code' }), ta));
+  }
+  function renderAll(){
+    if (!state.model) return;
+    renderSectionSelect(); renderAddForm(); renderOutline(); renderVisual(); renderOutput();
+    $('btn-undo').disabled = !state.history.length;
+  }
+
+  // ---------- check tab ----------
+  function check(){
+    var res = SOG.parse($('chk-code').value), box = $('chk-msg'); box.innerHTML = '';
+    if (!res.ok) {
+      var items = [res.message]; if (res.line) items.push('Look around line ' + res.line + '.');
+      items.push("Don't paste this into LearnWorlds.");
+      box.appendChild(msg('bad', '❌ Not safe to paste', items)); return;
+    }
+    var lines = res.model.sections.map(function(s, i){ return pad(i + 1) + ' ' + s.title + ': ' + s.cards.length + ' cards'; });
+    if (res.repairs.length) {
+      var fixed = SOG.build(res.model).code;
+      var ta = h('textarea', { readonly:true, spellcheck:'false' }); ta.value = fixed;
+      box.appendChild(msg('warn', '⚠️ A damaged line was found (' + res.repairs.join(', ') + '). Use the repaired code below instead.', lines));
+      box.appendChild(h('div', { class:'btns' }, h('button', { class:'btn yellow', onclick:function(){ copyText(fixed, ta); } }, '📋 Copy repaired code')));
+      box.appendChild(h('details', null, h('summary', { text:'Show the code' }), ta));
+      return;
+    }
+    box.appendChild(msg('ok', '✅ Safe to paste: ' + res.model.sections.length + ' sections, ' + lines.reduce(function(n, l){ return n + parseInt(l.split(': ')[1], 10); }, 0) + ' cards', lines));
+  }
+
+  // ---------- wiring ----------
+  function showTab(name){
+    $('tab-update').setAttribute('aria-selected', name === 'update'); $('tab-check').setAttribute('aria-selected', name === 'check');
+    $('panel-update').classList.toggle('hidden', name !== 'update'); $('panel-check').classList.toggle('hidden', name !== 'check');
+  }
+  $('tab-update').addEventListener('click', function(){ showTab('update'); });
+  $('tab-check').addEventListener('click', function(){ showTab('check'); });
+  $('btn-load').addEventListener('click', load);
+  $('btn-add').addEventListener('click', addLesson);
+  $('btn-undo').addEventListener('click', undo);
+  $('btn-add-section').addEventListener('click', addSection);
+  $('btn-check').addEventListener('click', check);
+  ['add-section', 'add-title', 'add-link', 'add-pos'].forEach(function(id){ $(id).addEventListener('input', renderAddForm); $(id).addEventListener('change', renderAddForm); });
+  $('view-form-btn').addEventListener('click', function(){ setView('form'); });
+  $('view-visual-btn').addEventListener('click', function(){ setView('visual'); });
+  $('v-preview').addEventListener('change', function(e){ state.vPreview = e.target.checked; renderVisual(); });
+  $('v-desktop').addEventListener('click', function(){ state.vPhone = false; renderVisual(); });
+  $('v-phone').addEventListener('click', function(){ state.vPhone = true; renderVisual(); });
+  $('v-undo').addEventListener('click', undo);
+  $('modal').addEventListener('click', function(e){ if (e.target.id === 'modal') closeModal(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !$('modal').classList.contains('hidden')) closeModal(); });
+  (function(){ var probe = new Image(); probe.onerror = function(){ $('v-page').classList.add('noimg'); }; probe.src = 'https://lwfiles.mycourse.app/69022f36b413718f735b7f4a-public/ae50f79f1fdd93c8c13c911eef66fecc.png'; })();
+  try { if (localStorage.getItem('sogBuilderView') === 'visual') setView('visual'); } catch(e){}
+  window.addEventListener('beforeunload', function(e){ if (state.log.length) { e.preventDefault(); e.returnValue = ''; } });
+})();
+</script>
+</body>
+</html>
